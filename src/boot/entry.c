@@ -34,10 +34,8 @@ void main()
     init_timer();
     init_vmm();
     init_pmm();
-    int *i = kmalloc(4);
-    *i = 15;
-    printk("%d\n", *i);
-    kfree(i);
-    *i = 5; 
+    printk("hello");
+    userinit();
+    scheduler();
     for(;;);            // never return back! 
 }

@@ -44,7 +44,7 @@ void map(pgd_t *cur_pgd, uint32_t va, uint32_t pa, uint32_t flags)
     if(!pte) 
     {
         pte = (pte_t *)(V2P((uint32_t)kpalloc()));
-        cur_pgd[pgd_idx] = (uint32_t)pte | PAGE_WRITE | PAGE_PRESENT;
+        cur_pgd[pgd_idx] = (uint32_t)pte | PAGE_WRITE | PAGE_PRESENT | PAGE_USER;
     }
     pte = (pte_t *)P2V((uint32_t)pte);
 

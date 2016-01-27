@@ -16,8 +16,8 @@ typedef pgtable_entry_t pte_t;
 #define PGDIRECT_INDEX(addr)  ((addr)>>22)
 #define PGTABLE_INDEX(addr) ((addr)>>12 & 0x3FF)
 #define PG_INDEX(addr)      ((addr) & 0xFFF)
-#define V2P(vaddr)          ((vaddr) - PAGE_OFFSET)
-#define P2V(paddr)          ((paddr) + PAGE_OFFSET)
+#define V2P(vaddr)          ((uint32_t)(vaddr) - PAGE_OFFSET)
+#define P2V(paddr)          ((uint32_t)(paddr) + PAGE_OFFSET)
 #define PGROUNDUP(vaddr)    ((vaddr) & PAGE_MASK)
 #define PAGE_PRESENT 1
 #define PAGE_WRITE   2

@@ -33,8 +33,13 @@ SECTIONS
         . = ALIGN(4096);
     }
     PROVIDE (kernel_end = . );
-
-
+    . = 0x0;
+    .initcode : AT(kernel_end - 0xC0000000)
+    {
+        *(.initcode)
+        . = ALIGN(4096);
+    }
+    PROVIDE (binary_size = . );
 }
 
 

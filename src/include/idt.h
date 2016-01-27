@@ -82,5 +82,8 @@ void isr255();
 
 #define TRAP_FLAGS 0x8F
 #define INTR_FLAGS 0x8E
+void intrret();
+static inline void sti() {asm ("sti");}        // start intr
+static inline void cli() {asm ("cli");}        // close intr
 
 #endif

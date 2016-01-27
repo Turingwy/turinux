@@ -13,6 +13,7 @@ void isr_handler(regs_pt *regs)
     if(handlers[regs->int_no] == NULL) 
     {
         printk("Catched unhandled interrupt %x\n", regs->int_no);
+        for(;;);
         return;
     }
     handlers[regs->int_no](regs);
@@ -66,6 +67,10 @@ static void init_8259APIC() {
 }
 
 
+void handler_D(regs_pt *ptr) {
+    printk("%d, %d",ptr->cs,ptr->err_code);
+    for(;;);
+}
 
 void init_idt()
 {
@@ -104,8 +109,10 @@ void init_idt()
     set_trap_gate(31, (uint32_t)isr31, 0x08);
     set_intr_gate(32, (uint32_t)irq0, 0x08);
     set_intr_gate(33, (uint32_t)irq1, 0x08);
+    register_handler(0xD, handler_D);
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
     idt_ptr.base = (uint32_t)idt;
     idt_flush((uint32_t)&idt_ptr);
 }
+
 

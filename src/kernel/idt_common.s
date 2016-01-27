@@ -51,7 +51,7 @@ ISR_NOERRCODE 30
 ISR_NOERRCODE 31
 
 ; 用来实现system call
-ISR_NOERRCODE 255
+ISR_NOERRCODE 128
 
 %macro IRQ 2
 [global irq%1]
@@ -66,6 +66,8 @@ IRQ 1, 33
 
 [extern isr_handler]
 [global isr_common_stub]
+[global intrret]
+
 isr_common_stub:
     pusha
     xor eax, eax
@@ -82,16 +84,7 @@ isr_common_stub:
     push esp        ; struct regs ptr
     call isr_handler
     add esp, 4
-    pop eax
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-
-    popa
-    add esp, 8
-    iret
+    jmp  intrret
 
 [global irq_common_stub]
 [extern irq_handler]
@@ -109,15 +102,13 @@ irq_common_stub:
     
     push esp
     call irq_handler
-
-    add esp, 4
+    add  esp, 4
+intrret:
     pop ebx
     mov ds, bx
     mov es, bx
     mov fs, bx
     mov gs, bx
-    mov ss, bx
-
     popa
     add esp, 8
     iret
