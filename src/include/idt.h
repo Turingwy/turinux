@@ -78,7 +78,7 @@ void irq0();
 void irq1();
 
 // 32～255 用户自定义异常
-void isr255();
+void isr128();
 
 #define TRAP_FLAGS 0x8F
 #define INTR_FLAGS 0x8E

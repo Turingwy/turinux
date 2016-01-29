@@ -2,6 +2,8 @@
 #include "types.h"
 #include "idt.h"
 #include "stdio.h"
+#include "syscall.h"
+
 idt_entry_t idt[256];
 
 idt_ptr_t idt_ptr;
@@ -13,7 +15,6 @@ void isr_handler(regs_pt *regs)
     if(handlers[regs->int_no] == NULL) 
     {
         printk("Catched unhandled interrupt %x\n", regs->int_no);
-        for(;;);
         return;
     }
     handlers[regs->int_no](regs);
@@ -68,8 +69,10 @@ static void init_8259APIC() {
 
 
 void handler_D(regs_pt *ptr) {
-    printk("%d, %d",ptr->cs,ptr->err_code);
-    for(;;);
+    for(;;) {
+        for(int i = 0;i < 10000000; i++);
+        printk("A");    
+    }
 }
 
 void init_idt()
@@ -107,9 +110,12 @@ void init_idt()
     set_trap_gate(29, (uint32_t)isr29, 0x08);
     set_trap_gate(30, (uint32_t)isr30, 0x08);
     set_trap_gate(31, (uint32_t)isr31, 0x08);
+    set_trap_gate(128, (uint32_t)isr128, 0x08);             // system call
+    idt[128].flags |= (3 << 13);
     set_intr_gate(32, (uint32_t)irq0, 0x08);
     set_intr_gate(33, (uint32_t)irq1, 0x08);
     register_handler(0xD, handler_D);
+    register_handler(128, syscall);
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
     idt_ptr.base = (uint32_t)idt;
     idt_flush((uint32_t)&idt_ptr);

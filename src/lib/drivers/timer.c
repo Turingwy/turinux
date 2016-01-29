@@ -3,10 +3,15 @@
 #include "idt.h"
 #include "types.h"
 #include "timer.h"
+#include "proc.h"
+
+uint32_t ticks;
 
 void timer_interrupt(regs_pt *regs) {
-	static int tick_count = 0;
-	printk("tick_count:%d\r", tick_count++);
+    ticks++;
+    wakeup(&ticks);
+    if(regs->cs & 0x03 == 0x03)
+        sched();
 }
 
 void init_timer() {

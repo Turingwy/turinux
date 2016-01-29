@@ -33,6 +33,7 @@ void putchar_color(char ch, video_color back, video_color fore) {
     {
         cursor_y++;
         cursor_x = 0;
+        scroll();
         move_cursor();
         return;
     } else if(ch == '\r') 

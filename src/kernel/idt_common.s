@@ -3,7 +3,6 @@
 %macro ISR_NOERRCODE 1
 [global isr%1]              ; 这里很像jinja2里的拦截器的感觉啊
 isr%1:
-    cli
     push 0                  ; 为了与有错误码的中断相对应
     push %1
     jmp isr_common_stub     ; 无需return,中断处理程序退出之后直接刷ip即可回到正常流程中

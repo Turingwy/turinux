@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "gdt.h"
+#include "vmm.h"
 typedef uint32_t pid_t;
 
 enum proc_state {
@@ -28,7 +29,9 @@ struct proc
 {
     pgd_t *pgd;
     uint8_t *kstack;
-    volatile enum proc_state state;
+    enum proc_state state;
+    void *chan;
+    uint32_t killed;
     volatile uint32_t pid;
     struct proc *parent;
     regs_pt *regs;
@@ -43,7 +46,6 @@ struct cpu
 {
     struct context *scheduler;
     struct taskstate ts;
-    struct proc *current_proc;
 };
 
 static inline void ltr(uint16_t selector) 
@@ -51,4 +53,14 @@ static inline void ltr(uint16_t selector)
     asm volatile("ltr %0" :: "r"(selector));
 }
 
+extern struct proc *current_proc;
+
+void sched();
+void userinit();
+int fork();
+int wait();
+void sleep(void *chan);
+void wakeup(void *chan);
+void exit();
+int kill(pid_t pid);
 #endif

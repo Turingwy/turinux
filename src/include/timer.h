@@ -7,6 +7,8 @@
 #define TIMER_PORT 0x43
 #define TIMER_COUNT 50
 
+extern uint32_t ticks;
+
 void init_timer();
 
 #endif
