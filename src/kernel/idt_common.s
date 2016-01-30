@@ -65,6 +65,7 @@ IRQ 1, 33
 
 [extern isr_handler]
 [global isr_common_stub]
+[extern iskill]
 [global intrret]
 
 isr_common_stub:
@@ -82,6 +83,7 @@ isr_common_stub:
 
     push esp        ; struct regs ptr
     call isr_handler
+    call iskill
     add esp, 4
     jmp  intrret
 
@@ -101,6 +103,7 @@ irq_common_stub:
     
     push esp
     call irq_handler
+    call iskill
     add  esp, 4
 intrret:
     pop ebx

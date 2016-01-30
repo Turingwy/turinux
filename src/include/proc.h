@@ -4,6 +4,7 @@
 #include "types.h"
 #include "gdt.h"
 #include "vmm.h"
+#include "idt.h"
 typedef uint32_t pid_t;
 
 enum proc_state {

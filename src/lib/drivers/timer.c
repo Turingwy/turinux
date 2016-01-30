@@ -4,10 +4,12 @@
 #include "types.h"
 #include "timer.h"
 #include "proc.h"
+#include "iskill.h"
 
 uint32_t ticks;
 
 void timer_interrupt(regs_pt *regs) {
+    iskill(regs);
     ticks++;
     wakeup(&ticks);
     if(regs->cs & 0x03 == 0x03)

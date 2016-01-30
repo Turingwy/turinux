@@ -29,12 +29,12 @@ __attribute__((section(".init.text"))) void kern_entry()
 void main() 
 {
     cls();
+    cli();
     init_gdt();
     init_idt();
     init_timer();
     init_vmm();
     init_pmm();
-    printk("hello");
     userinit();
     scheduler();
     for(;;);            // never return back! 

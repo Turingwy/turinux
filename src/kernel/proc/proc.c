@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "gdt.h"
 
+extern uint32_t ticks;
 struct cpu cpuinfo;
 struct proc *current_proc;
 struct proc *running_procs;
@@ -60,27 +61,28 @@ static pgd_t *copyuvm(pgd_t *ppgd)
             pte_t *pte = kpalloc();
             if(!pte)    return;
             pgd[i] = V2P(pte) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
-            memcpy(pte, P2V(ppgd[i] & PAGE_MASK),PAGE_SIZE);
+            pte_t *ppte = (pte_t *)P2V(ppgd[i] & PAGE_MASK);
+            memcpy(pte, ppte,PAGE_SIZE);
             for(int j = 0; j < PGTABLE_COUNT; j++)
             {
                 if(pte[j] & PAGE_PRESENT != 0)
                 {
-                    char *mem = kpalloc();
-                    memset(mem, P2V(pte[j] & PAGE_MASK),PAGE_SIZE);
-                    uint32_t pa = i << 22 | j << 12;
-                    map(pgd, V2P(mem), pa, PAGE_WRITE|PAGE_PRESENT|PAGE_USER);
+                    pte[j] &= ~PAGE_WRITE;
+                    ppte[j] &= ~PAGE_WRITE;
+                    uint32_t n = ppte[j] & PAGE_MASK;
+                    int k = find_phpage(n)->pg_count++;
                 }
             }
         }
     }
-    for(int i = PGDIRECT_INDEX(PAGE_OFFSET); i < PGDIRECT_COUNT; i++)
+    for(int i = PGDIRECT_INDEX(PAGE_OFFSET); i < PGDIRECT_COUNT; i++) 
             pgd[i] = kern_pgd[i];
     return pgd;
 }
 pgd_t *setup_kpgd() 
 {
     pgd_t *pgd = kpalloc();
-    bzero(pgd, sizeof(pgd_t));
+    bzero(pgd, PAGE_SIZE);
     for(int i = PGDIRECT_INDEX(PAGE_OFFSET); i < PGDIRECT_COUNT; i++) 
         pgd[i] = kern_pgd[i];
     return pgd;
@@ -106,7 +108,8 @@ void userinit()
     p->pid = now_pid++;
     p->parent = NULL;
     current_proc = p;
-
+    fork();
+    kill(1);
 }
 
 void scheduler(void)
@@ -121,12 +124,10 @@ void scheduler(void)
             p = p->next;
         }
         current_proc = p;
+        running_procs = p;
         switchuvm(p);
-        printk("pid:%d\n", p->pid);
         switch_to(&(cpuinfo.scheduler), p->context);
         p = p->next;
-        current_proc = p;
-        running_procs = p;
         switch_pgd(V2P(kern_pgd));
     }
 }

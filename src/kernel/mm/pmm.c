@@ -3,16 +3,12 @@
 #include "stdio.h"
 #include "vmm.h"
 #include "pmm.h"
-/*
- * 空闲链表
- */
-struct run 
-{
-    struct run *next;
-};
+#include "idt.h"
 
-uint32_t pmstart, pmend;
-struct run *freelist;
+static uint32_t pmstart, pmend;
+static struct phpage *phpages;
+static struct phpage *freelist;
+static uint32_t phpages_count;
 
 multiboot_t *glb_mboot_ptr;
 void show_mmap() 
@@ -26,7 +22,7 @@ void show_mmap()
     {
             printk("base addr: %x\n", mmap[i].base_addr_low);
             if(mmap[i].length_low >= 0x700000) {
-                pmstart = V2P((uint32_t)kernel_end + 0x1000);
+                pmstart = V2P((uint32_t)kernel_end + 0x5000);
                 pmend = mmap[i].base_addr_low + mmap[i].length_low;
             }
     }
@@ -41,31 +37,60 @@ void init_pmm()
 
 void freerange(void *vstart, void *vend) 
 {
-    uint8_t *p;
-    p = (uint8_t *)PGROUNDUP((uint32_t)vstart);
-    for(; p + PAGE_SIZE <= (uint8_t*)vend; p+=PAGE_SIZE)
-        kpfree(p);
+    phpages = (struct phpage *)PGROUNDUP((uint32_t)vstart);
+    int i;
+    for(i = (V2P(vstart) >> 12) + 128, freelist = &phpages[i]; i < (V2P(vend) >> 12); i++) {
+        phpages[i].pg_num = i;
+        phpages[i].pg_flag = 0;
+        phpages[i].pg_count = 0;
+        phpages[i].next = &phpages[i+1];
+    }
+
+    phpages[i-1].next = NULL;
+    phpages_count = i;
 }
 
 void kpfree(uint8_t *v)
 {
-    struct run *r;
-    if((uint32_t)v % PAGE_SIZE || v < pmstart || V2P(v) >= pmend)
+    if((uint32_t)v % PAGE_SIZE || V2P(v) < pmstart || V2P(v) >= pmend)
     {
         printk("kfree fault");
         return;
     }
     memset(v, 0, PAGE_SIZE);
-    r = (struct run *)v;
-    r->next = freelist;
-    freelist = r;
+    int n = V2P(v) >> 12;
+//    cli();
+    if(phpages[n].pg_count > 0)
+        return;
+    phpages[n].pg_count--;
+    if(phpages[n].pg_count == 0)
+    {
+        phpages[n].next = freelist;
+        freelist = &phpages[n];
+    }
+//    sti();
 }
 
 uint8_t *kpalloc()
 {
-    struct run *r;
-    r = freelist;
-    if(r)
-        freelist = freelist->next;
-    return r;
+    if(!freelist) {
+        printk("No free page\n");
+        return NULL;
+    }
+
+//    cli();
+    int n = freelist->pg_num;
+    freelist->pg_count = 1;
+    freelist = freelist->next;
+//    sti();
+    return P2V(n << 12);
+}
+
+struct phpage *find_phpage(uint32_t pa)
+{
+    int n = pa >> 12;
+    if(n < phpages_count)
+        return &phpages[n];
+    else
+        return NULL;
 }
