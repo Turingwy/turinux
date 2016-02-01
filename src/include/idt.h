@@ -76,13 +76,16 @@ void isr30();
 void isr31();
 void irq0();
 void irq1();
-
+void irq14();
+void irq15();
 // 32～255 用户自定义异常
 void isr128();
 
 #define TRAP_FLAGS 0x8F
 #define INTR_FLAGS 0x8E
+
 void intrret();
+
 static inline void sti() {asm ("sti");}        // start intr
 static inline void cli() {asm ("cli");}        // close intr
 

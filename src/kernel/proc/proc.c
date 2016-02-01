@@ -123,6 +123,8 @@ void scheduler(void)
                 break;
             p = p->next;
         }
+        if(p->state != TASK_RUNNING)
+            continue;
         current_proc = p;
         running_procs = p;
         switchuvm(p);
@@ -168,21 +170,23 @@ int fork()
     return np->pid;
 }
 
-void sleep(void *chan)
+void sleep(void *chan, int _cli)
 {
     cli();
     current_proc->chan = chan;
     current_proc->state = TASK_SLEEPING;
     sti();
     sched();
+    if(_cli)
+        cli();
     current_proc->chan = NULL;    
 }
-
-
 
 void wakeup(void *chan)
 {
     struct proc *p;
+    if(chan != &ticks)
+            current_proc->state = TASK_RUNNING;
     for(p = current_proc->next; p!=current_proc; p=p->next) {
         if(p->state == TASK_SLEEPING && p->chan == chan)
                 p->state = TASK_RUNNING;
@@ -250,6 +254,6 @@ int wait()
         
         if(!haskids || current_proc->killed)
             return -1;
-        sleep(current_proc);
+        sleep(current_proc, 0);
     }
 }

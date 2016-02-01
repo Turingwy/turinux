@@ -69,6 +69,7 @@ static void init_8259APIC() {
 
 
 void handler_D(regs_pt *ptr) {
+    printk("\neip:%x, cs:%x, %x", ptr->eip, ptr->cs, ptr->err_code);
     for(;;) {
         for(int i = 0;i < 10000000; i++);
         printk("A");    
@@ -114,6 +115,7 @@ void init_idt()
     idt[128].flags |= (3 << 13);
     set_intr_gate(32, (uint32_t)irq0, 0x08);
     set_intr_gate(33, (uint32_t)irq1, 0x08);
+    set_intr_gate(46, (uint32_t)irq14, 0x08);
     register_handler(0xD, handler_D);
     register_handler(128, syscall);
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;

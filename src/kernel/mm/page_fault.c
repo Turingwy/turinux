@@ -4,6 +4,7 @@
 #include "stdio.h"
 #include "pmm.h"
 #include "proc.h"
+#include "buf.h"
 
 void do_wp_page(uint32_t va)
 {
@@ -22,7 +23,6 @@ void do_wp_page(uint32_t va)
     }
     else if(pg->pg_count == 1)
         map(current_proc->pgd, va, pa, PAGE_PRESENT|PAGE_USER|PAGE_WRITE);
-    
 }
 
 void page_fault(regs_pt *regs)
@@ -30,7 +30,7 @@ void page_fault(regs_pt *regs)
     uint32_t cr2;
     asm volatile("mov %%cr2, %0" : "=r" (cr2));
 
-    //printk("Page fault at %x, virtual address at %x.\n", regs->eip, cr2);
+    printk("Page fault at %x, virtual address at %x.\n", regs->eip, cr2);
     //printk("Error code: %x\n", regs->err_code);
     
     if(!(regs->err_code & PAGE_PRESENT))

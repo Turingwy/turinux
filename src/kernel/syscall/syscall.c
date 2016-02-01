@@ -88,7 +88,7 @@ int sys_sleep()
     while(ticks - ticks0 < n) {
         if(current_proc->killed)
             return -1;
-        sleep(&ticks);
+        sleep(&ticks, 0);
     }
 
     return 0;
@@ -121,9 +121,11 @@ pid_t sys_getpid()
 
 void sys_puts()
 {
-    char *str;
+/*    char *str;
     if(argstr(0, &str) < 0)
         return -1;;
     printk(str);
     return 0;
+*/
+    test();
 }

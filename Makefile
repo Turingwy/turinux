@@ -47,7 +47,7 @@ umount_image:
 
 .PHONY:qemu
 qemu:
-	qemu-system-i386 -fda floppy.img -boot a
+	qemu-system-i386 -fda floppy.img -hda minix.img
 
 .PHONY:debug
 debug:

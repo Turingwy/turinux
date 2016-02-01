@@ -60,7 +60,7 @@ void sched();
 void userinit();
 int fork();
 int wait();
-void sleep(void *chan);
+void sleep(void *chan, int cli);
 void wakeup(void *chan);
 void exit();
 int kill(pid_t pid);

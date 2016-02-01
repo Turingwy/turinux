@@ -5,6 +5,8 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "timer.h"
+#include "bio.h"
+
 void page_flush(uint32_t addr, uint32_t stack_top);
 
 uint8_t kern_stack[STACK_SIZE];
@@ -35,6 +37,8 @@ void main()
     init_timer();
     init_vmm();
     init_pmm();
+    ideinit();
+    binit();
     userinit();
     scheduler();
     for(;;);            // never return back! 
