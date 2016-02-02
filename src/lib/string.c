@@ -9,14 +9,16 @@ int strlen(char *str)
     return len;
 }
 
-void strcpy(char *dest, char *src) 
+int strcpy(char *dest, char *src) 
 {
+    int len = 0;
     while(*src != '\0') 
     {
         *dest++ = *src++;
+        len++;
     }
     *dest = '\0';
-    return;
+    return len;
 }
 
 void strcat(char *dest, char *src)
@@ -36,9 +38,9 @@ int strcmp(char *str1, char *str2)
         if(*str1 < *str2)   return -1;
         else if(*str1++ > *str2++)  return 1;
     }
-    if(*str1 == '\0')    return -1;
-    else if(*str2 == '\0')  return 1;
-    else return 0;
+    if(*str1 == *str2)   return 0;   
+    else if(*str1 == '\0')    return -1;
+    else return 1;
 }
 
 int itoa(uint32_t value, char *str, int radix) 

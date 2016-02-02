@@ -14,6 +14,7 @@ void readsb(uint32_t dev)
     struct buf *b;
     b = bread(dev, 1);
     memcpy(&sb, b->data, sizeof(struct superblock));
+    brelse(b);
 }
 
 int balloc(uint32_t dev) 
@@ -99,7 +100,7 @@ void ilock(struct inode *in)
     if(!(in->flag & I_VALID)) 
     {
         struct buf *b = bread(in->dev, ISECTOR(&sb, in->inum));
-        struct dinode *itable = (struct dinode *)b;
+        struct dinode *itable = (struct dinode *)(b->data);
         memcpy(in, &itable[(in->inum-1)%IPB], sizeof(struct dinode));
         in->flag |= I_VALID;
         brelse(b);
@@ -110,7 +111,6 @@ void iunlock(struct inode *in)
 {
     if(in == NULL || !(in->flag & I_BUSY) || in->ref < 1)
         return;         // TODO
-
     in->flag &= ~I_BUSY;
     wakeup(in);
 }
@@ -118,7 +118,7 @@ void iunlock(struct inode *in)
 void iupdate(struct inode *in)
 {
     struct buf *b = bread(in->dev, ISECTOR(&sb, in->inum));
-    struct dinode *itable = (struct dinode *)b;
+    struct dinode *itable = (struct dinode *)b->data;
     memcpy(&itable[(in->inum-1)%IPB], in, sizeof(struct dinode));
     bwrite(b);
     brelse(b);
@@ -130,6 +130,7 @@ void iput(struct inode *in)
         if(in->flag & I_BUSY)
             return;         // TODO
         iupdate(in);
+        in->flag = 0;
     }
     in->ref--;
 }

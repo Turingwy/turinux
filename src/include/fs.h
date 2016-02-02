@@ -14,7 +14,7 @@ struct superblock
     uint32_t max_filesz;
     uint16_t magic;         // 0x138F
     uint16_t padding;
-};
+} __attribute__((packed));
 
 // on disk inode structure
 struct dinode
@@ -26,7 +26,7 @@ struct dinode
     uint8_t  gid;
     uint8_t nlinks;
     uint16_t zone[9]; 
-};
+} __attribute__((packed));
 
 struct inode 
 {
@@ -42,15 +42,15 @@ struct inode
     uint16_t dev;
     uint32_t inum;
     uint32_t flag;
-};
+}  __attribute__((packed));
 
 #define I_BUSY 0x1
 #define I_VALID 0x2
 #define I_DIRTY 0x4
 
-#define NINODE 128
-
 extern struct inode icache[];
+
+#define NINODE 128
 
 // minix superblock's magic num
 #define SP_MAGIC 0x138F
@@ -68,4 +68,9 @@ extern struct inode icache[];
 
 #define ISECTOR(sp, in) (2 + ((sp)->imap_blk) + ((sp)->zmap_blk) \
                 + ((in)-1)/IPB)
+
+// function decriptions in src/fs
+
+uint32_t bmap(struct inode *in, uint16_t bn, int create);
+
 #endif

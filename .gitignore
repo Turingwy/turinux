@@ -1,3 +1,5 @@
 minix.img
+turinux_kernel
 *.o
+*.swp
 tags

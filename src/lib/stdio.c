@@ -27,6 +27,9 @@ void printk(char *format, ... )
                 case 'c':
                     buffer[n++] = va_arg(args, char);
                     break;
+                case 's':
+                    n += strcpy(buffer, va_arg(args, char *));
+                    break;
                 case 'd': 
                 {
                     int value = va_arg(args, int);

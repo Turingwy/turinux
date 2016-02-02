@@ -103,8 +103,9 @@ void brelse(struct buf *b)
     b->prev = &bcache.lru_head;
     bcache.lru_head.next->prev = b;
     bcache.lru_head.next = b;
+    //printk("b->s = %d\n", b->sector);
     b->flags &= ~B_BUSY;
-
+    //printk("b->1flag = %d\n", b->flags);
     wakeup(b);
 }
 

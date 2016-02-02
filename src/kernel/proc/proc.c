@@ -108,8 +108,6 @@ void userinit()
     p->pid = now_pid++;
     p->parent = NULL;
     current_proc = p;
-    fork();
-    kill(1);
 }
 
 void scheduler(void)

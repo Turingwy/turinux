@@ -79,11 +79,11 @@ static void idestart(struct buf *b)
     outb(0x1f3, phsect & 0xff);
     outb(0x1f4, (phsect >> 8) & 0xff);
     outb(0x1f5, (phsect >> 16) & 0xff);
-    outb(0x1f6, 0xe0 | (b->dev << 4) | ((phsect >> 24) & 0xff));
+    outb(0x1f6, 0xe0 | (b->dev << 4) | ((phsect >> 24) & 0x0f));
     if(b->flags & B_DIRTY)
     {
         outb(0x1f7, IDE_CMD_WRITE);
-        outsl(0x1f0, b->data, 1024/4);
+        outsl(0x1f0, b->data, 512/4);
     }
     else
     {
@@ -106,8 +106,18 @@ void ideintr()
             first = 0;
             return;
         }
-        else
+        else {
             insl(0x1f0, b->data+512, 512/4);
+//            for(int i = 0; i < 512;i++)
+//                printk("%x", b->data[i]);
+        }
+    } 
+    else if(b->flags & B_DIRTY)
+    {
+        if(first) {
+            outsl(0x1f0, b->data+512, 512/4);
+            first = 0;
+        }
     }
     idequeue = b->qnext;
     b->flags |= B_VALID;
@@ -146,7 +156,6 @@ void iderw(struct buf *b)
     else {
         p->qnext = b;
     }
-
     // wait for request to finish;
     while((b->flags & (B_VALID|B_DIRTY)) != B_VALID) {
         sleep(b, 1);
