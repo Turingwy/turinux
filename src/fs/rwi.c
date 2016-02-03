@@ -23,8 +23,7 @@ int readi(struct inode *in, char *dest, uint32_t off, uint32_t len)
         memcpy(dest, bp->data + off%BSIZE, m);
         brelse(bp);
      }
-
-     return i;
+     return len;
 }
 
 int writei(struct inode *in, char *src, uint32_t off, uint32_t len)
@@ -44,7 +43,7 @@ int writei(struct inode *in, char *src, uint32_t off, uint32_t len)
         m = MIN(len-i, BSIZE - off%BSIZE);
         memcpy(bp->data + off%BSIZE, src, m);
         bwrite(bp);
-        brelse();
+        brelse(bp);
     }
 
     if(off > in->size) 

@@ -5,6 +5,8 @@
 #include "gdt.h"
 #include "vmm.h"
 #include "idt.h"
+#include "file.h"
+
 typedef uint32_t pid_t;
 
 enum proc_state {
@@ -26,6 +28,8 @@ typedef struct context
     uint32_t eip;
 } context;
 
+#define FD_SIZE 64
+
 struct proc 
 {
     pgd_t *pgd;
@@ -39,7 +43,10 @@ struct proc
     context *context;
     struct proc *next;
     char name[16];
+    struct file *fd[FD_SIZE];
 }; 
+
+
 
 extern pid_t now_pid;
 
@@ -49,6 +56,7 @@ struct cpu
     struct taskstate ts;
 };
 
+extern struct proc *current_proc;
 static inline void ltr(uint16_t selector) 
 {
     asm volatile("ltr %0" :: "r"(selector));

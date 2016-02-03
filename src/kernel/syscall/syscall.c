@@ -4,6 +4,7 @@
 #include "proc.h"
 #include "stdio.h"
 #include "timer.h"
+
 int fetchint(struct proc *proc, uint32_t addr, int *ip)
 {
     if(addr > PAGE_SIZE || addr + 4 > PAGE_SIZE)

@@ -39,8 +39,39 @@ int strcmp(char *str1, char *str2)
         else if(*str1++ > *str2++)  return 1;
     }
     if(*str1 == *str2)   return 0;   
-    else if(*str1 == '\0')    return -1;
-    else return 1;
+    else if(*str1 == '\0')    return -2;
+    else return 2;
+}
+
+static char *laststr;
+
+char *strtok(char *str, char *delim)
+{
+    int len = strlen(delim);
+    if(str)
+        laststr = str;
+    if(*laststr)
+        str = laststr;
+    else
+        return NULL;
+    while(*laststr)
+    {
+        if(strcmp(laststr, delim) == 2) {
+            *laststr = '\0';
+            laststr += len;
+            while (strcmp(laststr, delim) == 2) {
+                laststr += len;
+            }
+            return str;
+        }
+        laststr++;
+    }
+    return str;
+}
+
+int tok_hasnext()
+{
+    return *laststr ? 1:0;
 }
 
 int itoa(uint32_t value, char *str, int radix) 

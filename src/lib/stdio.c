@@ -28,7 +28,7 @@ void printk(char *format, ... )
                     buffer[n++] = va_arg(args, char);
                     break;
                 case 's':
-                    n += strcpy(buffer, va_arg(args, char *));
+                    putstr(va_arg(args, char *), black, light_grey);
                     break;
                 case 'd': 
                 {
@@ -58,5 +58,5 @@ void printk(char *format, ... )
     }
     buffer[n] = '\0';
     
-    putstr(buffer, black, white);
+    putstr(buffer, black, light_grey);
 }
