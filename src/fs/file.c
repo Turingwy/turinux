@@ -215,4 +215,50 @@ int iunlink(char *path)
     return 0;
 }
 
+int create(char *path, uint16_t mode)
+{
+    char name[NAMELEN];
+    struct inode *dp = namepi(path, name);
+    struct inode *ip;
+    if(!dp)
+        return NULL;
+    ilock(dp);
+
+    // open a exist file 
+    if(ip = dirlookup(dp, name, 0))
+    {
+        iunlock(dp);
+        iput(dp);
+        if(ISREG(mode) && ISREG(ip->mode)) {
+            iunlock(ip);
+            return ip;
+        }
+        iunlock(ip);
+        iput(ip);
+        return NULL;
+    }
+
+    // create a new file inode
+    int ino;
+    if(!(ino = ialloc(0)))
+        return NULL;
+
+    ip = iget(0, ino);
+    ilock(ip);
+    ip->nlinks = 1;
+    
+    if(ISDIR(mode))
+    {
+        dp->nlinks++;       // for ..
+        ip->mode = mode;
+        dirlink(ip, ".", ip->inum);
+        dirlink(ip, "..", dp->inum);
+    }
+
+    dirlink(dp, name, ip->inum);    
+    iunlock(ip);
+    iunlock(dp);
+    iput(dp);
+    return ip;    
+}
 

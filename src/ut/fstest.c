@@ -8,10 +8,14 @@
 extern struct superblock sb;
 void test()
 {
-    char name[100];
+/*    char name[100];
     struct inode *in = namepi("/entry.c", name);
     printk("%d\n", in->inum);
     printk("%s\n", name);
+*/
+
+    struct inode *in = create("/work", FDIR);
+    iput(in);
 /*    struct file *f = filealloc();
     f->in = in;
     f->rw = FD_READABLE;

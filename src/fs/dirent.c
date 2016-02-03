@@ -27,17 +27,20 @@ struct inode *dirlookup(struct inode *dp, char *dirname, uint32_t *offp)
 
 int dirlink(struct inode *dp, char *dirname, uint32_t ino)
 {
-    if(!ISDIR(dp->mode) || ino < 1)
+    if(!ISDIR(dp->mode) || ino < 1) {
         return -1;
+    }
     
-    if(dirlookup(dp, dirname, 0))
+    if(dirlookup(dp, dirname, 0)) 
         return -1;
+
     struct dirent dir;
     int off;
     for(off = 0; off < dp->size; off+=sizeof(struct dirent))
     {
-        if(!readi(dp, &dir, off, sizeof(struct dirent)))
+        if(!readi(dp, &dir, off, sizeof(struct dirent))) {
             return -1;
+        }
         // found a new entry
         if(!dir.ino)
             break;
@@ -46,6 +49,7 @@ int dirlink(struct inode *dp, char *dirname, uint32_t ino)
     dir.ino = ino;
     strcpy(dir.name, dirname);
     writei(dp, &dir, off, sizeof(struct dirent));
+    printk("%s\n", dirname);
     return 0;
 }
 
