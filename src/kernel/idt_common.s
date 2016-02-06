@@ -60,8 +60,8 @@ irq%1:
     jmp irq_common_stub
 %endmacro
 
-IRQ 0, 32
-IRQ 1, 33
+IRQ   0,    32
+IRQ   1,    33
 IRQ   2,    34 	; 与 IRQ9 相接，MPU-401 MD 使用
 IRQ   3,    35 	; 串口设备
 IRQ   4,    36 	; 串口设备

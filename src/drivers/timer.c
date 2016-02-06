@@ -12,8 +12,9 @@ void timer_interrupt(regs_pt *regs) {
     iskill(regs);
     ticks++;
     wakeup(&ticks);
-    if(regs->cs & 0x03 == 0x03)
+    if(regs->cs & 0x03 == 0x03) {
         sched();
+    }
 }
 
 void init_timer() {

@@ -10,7 +10,7 @@
 struct file ftable[FTABLE_SZ];
 
 // allocate a free file structure in ftable
-struct file*filealloc()
+static struct file*filealloc()
 {
     for(int n = 0; n < FTABLE_SZ; n++)
     {
@@ -24,7 +24,7 @@ struct file*filealloc()
 
 // duplicate a file structure.
 // only when f is being used.
-struct file *filedup(struct file *f)
+static struct file *filedup(struct file *f)
 {
     if(!f->ref)
         return NULL;
@@ -32,7 +32,7 @@ struct file *filedup(struct file *f)
     return f;
 }
 
-int fileclose(struct file *f)
+static int fileclose(struct file *f)
 {
     if(f->ref < 1)
         return 0;
@@ -47,7 +47,7 @@ int fileclose(struct file *f)
 }
 
 // read from f to addr(kernel memory)
-int fileread(struct file *f, char *addr, int len)
+static int fileread(struct file *f, char *addr, int len)
 {
     int r;
 
@@ -71,7 +71,7 @@ int fileread(struct file *f, char *addr, int len)
     return -1;
 }
 
-int filewrite(struct file *f, char *addr, int len)
+static int filewrite(struct file *f, char *addr, int len)
 {
     int r;
 
@@ -116,6 +116,8 @@ static int fdalloc(struct file *f)
 
 int fddup(struct file *f)
 {
+    if(!f)
+        return -1;
     int fd;
     if((fd = fdalloc(f)) == -1)
         return -1;
@@ -215,7 +217,7 @@ int iunlink(char *path)
     return 0;
 }
 
-int create(char *path, uint16_t mode)
+struct inode *create(char *path, uint16_t mode)
 {
     char name[NAMELEN];
     struct inode *dp = namepi(path, name);
@@ -229,6 +231,7 @@ int create(char *path, uint16_t mode)
     {
         iunlock(dp);
         iput(dp);
+        ilock(ip);
         if(ISREG(mode) && ISREG(ip->mode)) {
             iunlock(ip);
             return ip;
@@ -246,11 +249,10 @@ int create(char *path, uint16_t mode)
     ip = iget(0, ino);
     ilock(ip);
     ip->nlinks = 1;
-    
+    ip->mode = mode;
     if(ISDIR(mode))
     {
         dp->nlinks++;       // for ..
-        ip->mode = mode;
         dirlink(ip, ".", ip->inum);
         dirlink(ip, "..", dp->inum);
     }
@@ -262,3 +264,55 @@ int create(char *path, uint16_t mode)
     return ip;    
 }
 
+int open(char *path, int omode)
+{
+    struct inode *ip;
+    if(omode & O_CREATE)
+    {
+        ip = create(path, FREG);
+        if(!ip)
+            return -1;
+    }
+    else
+    {
+        if(!(ip = namei(path, 0))) {
+            return -1;
+        }
+        ilock(ip);
+        if(ISDIR(ip->mode) && omode != O_RDONLY) {
+            iunlock(ip);
+            iput(ip);
+            return -1;
+        }
+        iunlock(ip);
+    }
+    
+    struct file *f;
+    int fd;
+    if(!(f = filealloc()) || (fd = fdalloc(f)) < 0) 
+    {
+        if(f)
+            fileclose(f);
+        iput(ip);
+        return -1;
+    }
+    f->type = FD_INODE;
+    f->in = ip;
+    f->offset = 0;
+    if(omode & O_WRONLY)
+        f->rw = FD_WRITABLE;
+    else if(omode & O_RDWR)
+        f->rw = FD_WRITABLE | FD_READABLE;
+    else
+        f->rw = FD_READABLE;
+    return fd;
+}
+
+int mkdir(char *path)
+{
+    struct inode *ip = create(path, FDIR);
+    if(!ip)
+        return -1;
+    iput(ip);
+    return 0;
+}

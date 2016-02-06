@@ -41,7 +41,7 @@ void map(pgd_t *cur_pgd, uint32_t va, uint32_t pa, uint32_t flags)
     uint32_t pgd_idx = PGDIRECT_INDEX(va);
     uint32_t pte_idx = PGTABLE_INDEX(va);
     pte_t *pte = cur_pgd[pgd_idx] & PAGE_MASK;
-    if(!pte) 
+    if(!pte)
     {
         pte = (pte_t *)(V2P((uint32_t)kpalloc()));
         cur_pgd[pgd_idx] = (uint32_t)pte | PAGE_WRITE | PAGE_PRESENT | PAGE_USER;

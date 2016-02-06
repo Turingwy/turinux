@@ -3,6 +3,8 @@
 #include "bmap.h"
 #include "bio.h"
 #include "buf.h"
+#include "dev.h"
+#include "stat.h"
 
 #define MIN(a, b)   ((a) > (b) ? (b) : (a))
 
@@ -10,6 +12,19 @@
 // to destination $dest
 int readi(struct inode *in, char *dest, uint32_t off, uint32_t len)
 {
+     // if this inode is a char device,
+     // it's device number is in zone[0]
+     // note:
+     // devs[devno].read is a callback function that read from 
+     // character device.
+     if(ISCHR(in->mode))
+     {
+        int devno = in->zone[0];
+        if(devno > DEVSCNT)
+            return -1;
+        return devs[devno].read(in, dest, len);
+     }
+
      if(in->size < off || len < 0)
         return -1;
      if(off + len > in->size)
@@ -28,6 +43,14 @@ int readi(struct inode *in, char *dest, uint32_t off, uint32_t len)
 
 int writei(struct inode *in, char *src, uint32_t off, uint32_t len)
 {
+    if(ISCHR(in->mode))
+    {
+        uint16_t devno = in->zone[0];
+        if(devno >= DEVSCNT)
+            return -1;
+        return devs[devno].write(in, src, len);        
+    }
+
     if(in->size < off || len < 0)       // can't write a blank space
         return -1;
     if(off + len > MAX_FILESZ*BSIZE)    // MAX_FILESZ is minix's max file logical block size

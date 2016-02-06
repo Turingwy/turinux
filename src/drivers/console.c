@@ -15,7 +15,27 @@ static void move_cursor()
     outb(0x3D5, abs_cursor & 0xFF);
 }
 
+void get_cursor(int *x, int *y)
+{
+    *x = cursor_x;
+    *y = cursor_y;
+}
 
+void cursor_left()
+{
+    if(cursor_x) {
+        cursor_x--;
+        move_cursor();
+    }
+}
+
+void cursor_right()
+{
+    if(cursor_x < 79) {
+        cursor_x++;
+        move_cursor();
+    }
+}
 void cls() 
 {
     uint16_t color = (( black << 4 ) | (white & 0x0F));
@@ -41,7 +61,13 @@ void putchar_color(char ch, video_color back, video_color fore) {
         cursor_x = 0;
         move_cursor();
         return;
-    }
+    } else if(ch == '\b')
+    {
+        if(cursor_x)  cursor_x--;
+        video_array[ABS_CURSOR()] = ' ' | (((black<< 4) | (white & 0x0F))) << 8;
+        move_cursor();
+        return;
+    } 
     uint16_t color = ((back << 4) | (fore & 0x0F));
     uint16_t value = ch | (color << 8);
     uint16_t abs_cursor = ABS_CURSOR();
@@ -78,3 +104,5 @@ void scroll()
     cursor_y--;
     move_cursor();
 }
+
+

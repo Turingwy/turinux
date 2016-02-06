@@ -5,6 +5,9 @@
 #include "idt.h"
 #include "proc.h"
 #include "gdt.h"
+#include "file.h"
+
+#define MIN(a, b)       (a)>(b) ? (b):(a)
 
 extern uint32_t ticks;
 struct cpu cpuinfo;
@@ -13,6 +16,7 @@ struct proc *running_procs;
 struct proc *waiting_procs;
 struct proc *init_proc;
 pid_t now_pid;
+
 static struct proc *allocproc() 
 {
     struct proc *p;
@@ -41,12 +45,20 @@ static struct proc *allocproc()
     return p;
 }
 
-void inituvm(pgd_t *pgd, uint8_t *start, uint8_t *sz)
+void inituvm(pgd_t *pgd, uint32_t va, uint32_t start, uint32_t sz, uint32_t filesz)
 {
-    uint32_t mem = kpalloc();
-    bzero(mem, PAGE_SIZE);
-    map(pgd, 0, V2P(mem), PAGE_WRITE | PAGE_PRESENT | PAGE_USER);
-    memcpy(mem, start, (uint32_t)sz);
+    uint32_t mem;
+    uint32_t voff = va & 0x0FFF;
+    int m;
+    for(int p = 0; sz > 0; sz -= m, voff=(voff+m)%PAGE_SIZE, p++, start+=m, filesz-=m)
+    {
+        mem = kpalloc();
+        bzero(mem, PAGE_SIZE);
+        map(pgd, PGROUNDUP(va)+p, V2P(mem), PAGE_WRITE | PAGE_PRESENT | PAGE_USER);
+        m = MIN(sz, PAGE_SIZE- voff);
+        if(filesz>0)
+            memcpy(mem+voff, start, m);
+    }
 } 
 
 static pgd_t *copyuvm(pgd_t *ppgd) 
@@ -69,8 +81,9 @@ static pgd_t *copyuvm(pgd_t *ppgd)
                 {
                     pte[j] &= ~PAGE_WRITE;
                     ppte[j] &= ~PAGE_WRITE;
+                    asm volatile ("invlpg (%0)" : : "a" (i<<22|j<<12));
                     uint32_t n = ppte[j] & PAGE_MASK;
-                    int k = find_phpage(n)->pg_count++;
+                    find_phpage(n)->pg_count++;
                 }
             }
         }
@@ -79,6 +92,7 @@ static pgd_t *copyuvm(pgd_t *ppgd)
             pgd[i] = kern_pgd[i];
     return pgd;
 }
+
 pgd_t *setup_kpgd() 
 {
     pgd_t *pgd = kpalloc();
@@ -87,7 +101,9 @@ pgd_t *setup_kpgd()
         pgd[i] = kern_pgd[i];
     return pgd;
 }
+
 extern uint8_t kernel_end[], binary_size[];
+
 // init first user process;
 void userinit()
 {
@@ -95,7 +111,7 @@ void userinit()
     p = allocproc();
     init_proc = p;
     p->pgd = setup_kpgd();
-    inituvm(p->pgd, kernel_end, binary_size);
+    inituvm(p->pgd, 0, kernel_end, binary_size, binary_size);
     memset(p->regs, 0, sizeof(regs_pt));
     p->regs->cs = SEG_UCODE << 3 | 0x3;
     p->regs->ds = SEG_UDATA << 3| 0x3;
@@ -108,6 +124,7 @@ void userinit()
     p->pid = now_pid++;
     p->parent = NULL;
     current_proc = p;
+
 }
 
 void scheduler(void)
@@ -151,6 +168,7 @@ void sched()
 int fork()
 {
     struct proc *np;
+    int pa;
     if((np = allocproc()) == NULL) 
         return -1;
     np->pgd = copyuvm(current_proc->pgd);
@@ -158,6 +176,11 @@ int fork()
     {
         kpfree(np);
         return -1;
+    }
+    for(int i = 0; current_proc->fd[i]; i++)
+    {
+        current_proc->fd[i]->ref++;
+        np->fd[i] = current_proc->fd[i];
     }
     np->parent = current_proc;
     *np->regs = *current_proc->regs;
@@ -188,7 +211,6 @@ void wakeup(void *chan)
     for(p = current_proc->next; p!=current_proc; p=p->next) {
         if(p->state == TASK_SLEEPING && p->chan == chan)
                 p->state = TASK_RUNNING;
-
     }
 }
 
@@ -215,7 +237,7 @@ void exit()
         printk("init exiting");
         return;
     }
-    wakeup(p->parent);
+    wakeup(current_proc->parent);
     for(p = current_proc->next; p != current_proc; p = p->next)
     {
         if(p->parent == current_proc)

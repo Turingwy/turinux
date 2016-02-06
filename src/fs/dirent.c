@@ -3,6 +3,7 @@
 #include "dirent.h"
 #include "string.h"
 #include "stat.h"
+#include "proc.h"
 
 struct inode *dirlookup(struct inode *dp, char *dirname, uint32_t *offp)
 {
@@ -53,27 +54,30 @@ int dirlink(struct inode *dp, char *dirname, uint32_t ino)
     return 0;
 }
 
-static struct inode *_name(char *path, int nameiparent, char *dirname)
+static struct inode *_name(char *p, int nameiparent, char *dirname)
 {
     struct inode *in, *next;
     char *name;
+    char arr[64];
+    char *path = arr;
+    strcpy(arr, p);
     if(*path == '/') {
         in = iget(0, 1);
         while(*++path == '/')
             ;
     }
-/*    else
-        in = idup(proc->cwd);
-*/
+    else
+        in = idup(current_proc->cwd);
+    printk("%s, %d\n", path, current_proc->pid);
     name = strtok(path, "/");
     while(name)
     {
-        printk("%s\n", name);
+        printk("File system search:%s\n", name);
         ilock(in);
         if(!ISDIR(in->mode)) 
         {
             iunlock(in);
-            iput(in);    
+            iput(in);
             return NULL;
         }
         if(nameiparent && !tok_hasnext())
@@ -91,10 +95,11 @@ static struct inode *_name(char *path, int nameiparent, char *dirname)
         iunlock(in);
         iput(in);
         in = next;
-        name = strtok(NULL, "/");
         if(!tok_hasnext() && dirname)
             strcpy(dirname, name);
+        name = strtok(NULL, "/");
     }
+
     return in;
 }
 

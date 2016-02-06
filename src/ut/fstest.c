@@ -14,9 +14,25 @@ void test()
     printk("%s\n", name);
 */
 
-    struct inode *in = create("/work", FDIR);
+/*    struct inode *in = create("/work/hello", FREG);
+    ilock(in);
+    writei(in, "nihao shijie", 0, 14);
+    iunlock(in);
     iput(in);
-/*    struct file *f = filealloc();
+    */
+/*    struct inode *in = create("/dev/tty", FCHR);
+    ilock(in);
+    writei(in, "nihao shijie", 0, 14);
+    iunlock(in);
+    iput(in);
+*/
+
+//  printk("%d\n", mkdir("/nihao"));
+
+    char *argv[] = {"ls", "-l", "-s", NULL};
+    exec("/a.out", argv);
+    
+/*  struct file *f = filealloc();
     f->in = in;
     f->rw = FD_READABLE;
     f->type = FD_INODE;

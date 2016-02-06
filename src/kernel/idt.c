@@ -38,6 +38,7 @@ void irq_handler(regs_pt *regs)
 void register_handler(int num, interrupt_handler_t func) {
     handlers[num] = func;
 }
+
 static void idt_set_gate(int num, uint32_t addr, uint16_t sele, uint8_t flags) 
 {
     idt[num].offset_low = addr & 0xFFFF;

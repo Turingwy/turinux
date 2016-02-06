@@ -16,11 +16,17 @@ struct file
 
 #define FTABLE_SZ 128
 
-#define FD_INODE 1
-#define FD_PIPE 2
+#define FD_INODE 0x01
+#define FD_PIPE 0x02
 
-#define FD_READABLE 1
-#define FD_WRITABLE 2
+#define FD_READABLE 0x01
+#define FD_WRITABLE 0x02
+
+#define O_RDONLY 0x00
+#define O_WRONLY 0x01
+#define O_RDWR   0x02
+#define O_CREATE 0x200
+
 #endif
 
 

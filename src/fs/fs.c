@@ -88,6 +88,13 @@ struct inode * iget(uint32_t dev, uint32_t inum)
     return &icache[empty];
 }
 
+void idup(struct inode *in)
+{
+    ilock(in);
+    in->ref++;
+    iunlock(in);
+}
+
 void ilock(struct inode *in)
 {
     if(in == 0 || in->ref < 1)
@@ -115,13 +122,16 @@ void iunlock(struct inode *in)
     wakeup(in);
 }
 
+#include "proc.h"
 void iupdate(struct inode *in)
 {
     struct buf *b = bread(in->dev, ISECTOR(&sb, in->inum));
     struct dinode *itable = (struct dinode *)b->data;
     memcpy(&itable[(in->inum-1)%IPB], in, sizeof(struct dinode));
+    printk("pid: %d start:\n", current_proc->pid);
     bwrite(b);
     brelse(b);
+    printk("pid: %d end:\n", current_proc->pid);
 }
 
 void iput(struct inode *in)

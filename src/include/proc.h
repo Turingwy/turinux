@@ -44,6 +44,7 @@ struct proc
     struct proc *next;
     char name[16];
     struct file *fd[FD_SIZE];
+    struct inode *cwd;
 }; 
 
 

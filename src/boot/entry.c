@@ -39,6 +39,8 @@ void main()
     init_pmm();
     ideinit();
     binit();
+    consoleinit();
+    kbdinit();
     userinit();
     scheduler();
     for(;;);            // never return back! 
