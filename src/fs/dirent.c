@@ -39,7 +39,7 @@ int dirlink(struct inode *dp, char *dirname, uint32_t ino)
     int off;
     for(off = 0; off < dp->size; off+=sizeof(struct dirent))
     {
-        if(!readi(dp, &dir, off, sizeof(struct dirent))) {
+        if(!readi(dp, (char *)&dir, off, sizeof(struct dirent))) {
             return -1;
         }
         // found a new entry
@@ -49,8 +49,7 @@ int dirlink(struct inode *dp, char *dirname, uint32_t ino)
     
     dir.ino = ino;
     strcpy(dir.name, dirname);
-    writei(dp, &dir, off, sizeof(struct dirent));
-    printk("%s\n", dirname);
+    writei(dp, (char *)&dir, off, sizeof(struct dirent));
     return 0;
 }
 
@@ -68,11 +67,10 @@ static struct inode *_name(char *p, int nameiparent, char *dirname)
     }
     else
         in = idup(current_proc->cwd);
-    printk("%s, %d\n", path, current_proc->pid);
     name = strtok(path, "/");
     while(name)
     {
-        printk("File system search:%s\n", name);
+//        printk("File system search:%s\n", name);
         ilock(in);
         if(!ISDIR(in->mode)) 
         {
@@ -99,7 +97,7 @@ static struct inode *_name(char *p, int nameiparent, char *dirname)
             strcpy(dirname, name);
         name = strtok(NULL, "/");
     }
-
+    
     return in;
 }
 

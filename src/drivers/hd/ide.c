@@ -3,6 +3,9 @@
 #include "idt.h"
 #include "ioport.h"
 #include "buf.h"
+#include "console.h"
+#include "stdio.h"
+
 /* busy. if bsy = 1, no other bits in the 
  * register are valid.
  */
@@ -68,6 +71,8 @@ void ideinit()
     outb(0x1f6, 0xe0 | (0 << 4));   // b'11100000'
     extern void ideintr();
     register_handler(46, ideintr);
+    printk("init ide disk driver");
+    print_state(OK_STATE);
 }
 
 static void idestart(struct buf *b)

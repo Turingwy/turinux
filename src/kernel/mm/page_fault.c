@@ -5,6 +5,7 @@
 #include "pmm.h"
 #include "proc.h"
 #include "buf.h"
+#include "memory.h"
 
 void do_wp_page(uint32_t va)
 {
@@ -30,7 +31,7 @@ void page_fault(regs_pt *regs)
 {
     uint32_t cr2;
     asm volatile("mov %%cr2, %0" : "=r" (cr2));
-    printk("page falut:%x,%x\n", regs->eip, cr2);
+    //printk("page falut:%x,%x\n", regs->eip, cr2);
     //printk("Error code: %x\n", regs->err_code);
     
     if(!(regs->err_code & PAGE_PRESENT))
@@ -56,6 +57,7 @@ void page_fault(regs_pt *regs)
     {
         printk("In kernel mode.\n");
     }
-
+    
+    kill(current_proc->pid);
     for(;;);
 }

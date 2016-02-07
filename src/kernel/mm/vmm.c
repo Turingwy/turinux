@@ -3,6 +3,8 @@
 #include "types.h"
 #include "stdio.h"
 #include "page_fault.h"
+#include "console.h"
+
 __attribute__((aligned(PAGE_SIZE))) pgdirect_entry_t kern_pgd[PGDIRECT_COUNT];
 __attribute__((aligned(PAGE_SIZE))) pgtable_entry_t kern_pgt[PGTABLE_SIZE][PGTABLE_COUNT];
 
@@ -31,8 +33,10 @@ void switch_pgd(uint32_t paddr)
 
 void init_vmm() 
 {
-    init_pg();        
+    init_pg();
     register_handler(0x0E, page_fault);
+    printk("init virtual memory map");
+    print_state(OK_STATE);
 }
 
 
@@ -40,7 +44,7 @@ void map(pgd_t *cur_pgd, uint32_t va, uint32_t pa, uint32_t flags)
 {
     uint32_t pgd_idx = PGDIRECT_INDEX(va);
     uint32_t pte_idx = PGTABLE_INDEX(va);
-    pte_t *pte = cur_pgd[pgd_idx] & PAGE_MASK;
+    pte_t *pte = (pte_t *)(cur_pgd[pgd_idx] & PAGE_MASK);
     if(!pte)
     {
         pte = (pte_t *)(V2P((uint32_t)kpalloc()));
@@ -56,7 +60,7 @@ void unmap(pgd_t *cur_pgd, uint32_t va)
 {
     uint32_t pgd_idx = PGDIRECT_INDEX(va);
     uint32_t pte_idx = PGTABLE_INDEX(va);
-    pte_t *pte = cur_pgd[pgd_idx] & PAGE_MASK;
+    pte_t *pte = (pte_t *)(cur_pgd[pgd_idx] & PAGE_MASK);
     if(!pte) 
         return;
     pte = (pte_t *)P2V((uint32_t)pte);
@@ -68,7 +72,7 @@ uint32_t getmapping(pgd_t *cur_pgd, uint32_t va, uint32_t *pa)
 {
     uint32_t pgd_idx = PGDIRECT_INDEX(va);
     uint32_t pte_idx = PGTABLE_INDEX(va);
-    pte_t *pte = cur_pgd[pgd_idx] & PAGE_MASK;
+    pte_t *pte = (pte_t *)(cur_pgd[pgd_idx] & PAGE_MASK);
     if(!pte) 
     {
         return 0;

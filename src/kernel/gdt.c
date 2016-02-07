@@ -25,7 +25,7 @@ void init_gdt()
     set_gdt_entry(SEG_KDATA, 0, 0xFFFFFFFF, 0x92, 0x0C);        // kernel ds
     set_gdt_entry(SEG_UCODE, 0, 0xFFFFFFFF, 0xFA, 0x0C);        // user cs
     set_gdt_entry(SEG_UDATA, 0, 0xFFFFFFFF, 0xF2, 0x0C);        // user ds
-    gdt_ptr.addr = gdt;
+    gdt_ptr.addr = (uint32_t)gdt;
     gdt_ptr.limit = sizeof(gdt_entry_t) * GDT_LENGTH - 1;
-    gdt_flush(&gdt_ptr);
+    gdt_flush((uint32_t)&gdt_ptr);
 }

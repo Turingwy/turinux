@@ -1,10 +1,14 @@
 #include "types.h"
 #include "console.h"
 #include "ioport.h"
+#include "string.h"
+
 #define ABS_CURSOR() (cursor_y * 80 + cursor_x)
 #define VIDEO_BUFF 0xC00B8000
 static uint16_t *video_array = (uint16_t*)VIDEO_BUFF;
 static uint32_t cursor_x, cursor_y;
+
+static void scroll();
 
 static void move_cursor() 
 {
@@ -88,7 +92,19 @@ void putchar_normal(char ch)
     putchar_color(ch, black, white);
 }
 
-void scroll() 
+static char state[][10] = {"[OK]", "[FAIL]"};
+
+void print_state(int n)
+{
+    int len = strlen(state[n]);
+    if(cursor_x > 80 - len)
+        cursor_y++;
+    cursor_x = 80 - len;
+    for(int i = 0; i < len; i++)
+        putchar_color(state[n][i], black, green);
+}
+
+static void scroll() 
 {
     if(cursor_y < 25)   return;
 

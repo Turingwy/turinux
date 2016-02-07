@@ -6,6 +6,10 @@
 #include "vmm.h"
 #include "timer.h"
 #include "bio.h"
+#include "ide.h"
+#include "dev.h"
+#include "proc.h"
+#include "kbd.h"
 
 void page_flush(uint32_t addr, uint32_t stack_top);
 

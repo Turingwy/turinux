@@ -5,6 +5,8 @@
 #include "stat.h"
 #include "dirent.h"
 #include "file.h"
+#include "exec.h"
+
 extern struct superblock sb;
 void test()
 {
@@ -30,7 +32,7 @@ void test()
 //  printk("%d\n", mkdir("/nihao"));
 
     char *argv[] = {"ls", "-l", "-s", NULL};
-    exec("/a.out", argv);
+    exec("/init", argv);
     
 /*  struct file *f = filealloc();
     f->in = in;

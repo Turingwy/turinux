@@ -3,4 +3,6 @@
 
 void ideinit();
 
+void iderw(struct buf *b);
+
 #endif

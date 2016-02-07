@@ -27,6 +27,30 @@ struct file
 #define O_RDWR   0x02
 #define O_CREATE 0x200
 
+struct file *filealloc();
+
+int fdalloc(struct file *f);
+
+int fddup(struct file *f);
+
+int fddup_fd(int fd);
+
+int read(int _fd, char *addr, int len);
+
+int write(int _fd, char *addr, int len);
+
+int close(int _fd);
+
+int ilink(char *old_path, char *new_path);
+
+int iunlink(char *path);
+
+struct inode *create(char *path, uint16_t mode);
+
+int open(char *path, int omode);
+
+int mkdir(char *path);
+
 #endif
 
 

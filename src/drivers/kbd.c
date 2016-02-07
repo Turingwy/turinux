@@ -1,7 +1,6 @@
 #include "kbd.h"
 #include "idt.h"
-
-char kbd_queue[256];
+#include "ioport.h"
 
 int kbdgetc()
 {

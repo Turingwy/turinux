@@ -22,8 +22,8 @@ typedef pgtable_entry_t pte_t;
 #define PAGE_PRESENT 1
 #define PAGE_WRITE   2
 #define PAGE_USER    4
-pgdirect_entry_t kern_pgd[];
-pgtable_entry_t kern_pte[][PGTABLE_COUNT];
+extern pgdirect_entry_t kern_pgd[];
+extern pgtable_entry_t kern_pte[][PGTABLE_COUNT];
 
 void init_vmm();
 void init_pg();

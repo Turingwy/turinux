@@ -96,4 +96,6 @@ static uint8_t shiftmap[256] =
     [0xD2] KEY_INS, [0xD3] KEY_DEL
 };
 
+int kbdgetc();
+
 #endif

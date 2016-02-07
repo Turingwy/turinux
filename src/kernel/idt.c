@@ -1,8 +1,10 @@
 #include "idt.h"
+#include "ioport.h"
 #include "types.h"
 #include "idt.h"
 #include "stdio.h"
 #include "syscall.h"
+#include "console.h"
 
 idt_entry_t idt[256];
 
@@ -45,6 +47,8 @@ static void idt_set_gate(int num, uint32_t addr, uint16_t sele, uint8_t flags)
     idt[num].offset_high = (addr >> 16) & 0xFFFF;
     idt[num].flags = flags << 8;
     idt[num].selector = sele;
+    printk("set idt gate %d", num);
+    print_state(OK_STATE);
 }
 
 static inline void set_trap_gate(int num, uint32_t addr, uint16_t sele) {
@@ -121,7 +125,9 @@ void init_idt()
     register_handler(128, syscall);
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
     idt_ptr.base = (uint32_t)idt;
-    idt_flush((uint32_t)&idt_ptr);
+    idt_flush(&idt_ptr);
+    printk("init idt");
+    print_state(OK_STATE);
 }
 
 

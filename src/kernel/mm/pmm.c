@@ -4,6 +4,9 @@
 #include "vmm.h"
 #include "pmm.h"
 #include "idt.h"
+#include "console.h"
+#include "memory.h"
+
 
 static uint32_t pmstart, pmend;
 static struct phpage *phpages;
@@ -16,11 +19,15 @@ void show_mmap()
     glb_mboot_ptr = (multiboot_t *)((uint32_t)(*(multiboot_t **)((uint32_t)&mboot_ptr_tmp + PAGE_OFFSET)) + PAGE_OFFSET);
     mmap_entry_t *mmap = (mmap_entry_t *)(glb_mboot_ptr->mmap_addr + PAGE_OFFSET);
     int len = glb_mboot_ptr->mmap_length / sizeof(mmap_entry_t);
-    printk("Kernel start at: %x\n", kernel_start);
-    printk("Kernel end at  : %x\n", kernel_end);
+    printk("Kernel start at: %x", kernel_start);
+    print_state(OK_STATE);
+    printk("Kernel end at  : %x", kernel_end);
+    print_state(OK_STATE);
+
     for(int i = 0;i < len; i++)
     {
-            printk("base addr: %x\n", mmap[i].base_addr_low);
+            printk("base addr: %x", mmap[i].base_addr_low);
+            print_state(OK_STATE);
             if(mmap[i].length_low >= 0x700000) {
                 pmstart = V2P((uint32_t)kernel_end + 0x5000);
                 pmend = mmap[i].base_addr_low + mmap[i].length_low;
@@ -32,7 +39,9 @@ void show_mmap()
 void init_pmm() 
 {
     show_mmap();
-    freerange(P2V(pmstart), P2V(pmend));
+    freerange((void *)P2V(pmstart), (void *)P2V(pmend));
+    printk("init physical memory map");
+    print_state(OK_STATE);
 }
 
 void freerange(void *vstart, void *vend) 
@@ -83,7 +92,7 @@ uint8_t *kpalloc()
     freelist->pg_count = 1;
     freelist = freelist->next;
 //    sti();
-    return P2V(n << 12);
+    return (uint8_t *)P2V(n << 12);
 }
 
 struct phpage *find_phpage(uint32_t pa)

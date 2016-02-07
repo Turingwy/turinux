@@ -4,7 +4,7 @@
 
 void iskill(regs_pt *regs)
 {
-    if(current_proc->killed == 1 && (regs->cs&3) == 3) {
+    if(current_proc->killed == 1) {
         exit();
     }
 }

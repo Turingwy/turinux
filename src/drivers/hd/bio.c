@@ -2,7 +2,9 @@
 #include "buf.h"
 #include "proc.h"
 #include "bio.h"
-
+#include "console.h"
+#include "stdio.h"
+#include "ide.h"
 
 struct {
     // disk block cache in kernel
@@ -27,7 +29,8 @@ void binit()
     bcache.buf[0].next = &bcache.buf[1];
     bcache.buf[BUF_SIZE-1].prev = &bcache.buf[BUF_SIZE-2];
     bcache.buf[BUF_SIZE-1].next = &bcache.lru_head;
-
+    printk("init bcache");
+    print_state(OK_STATE);
 }
 // get a cache for sector on device now.
 // if not found,allocate fresh block.

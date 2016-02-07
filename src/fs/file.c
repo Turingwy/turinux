@@ -5,12 +5,14 @@
 #include "proc.h"
 #include "dirent.h"
 #include "stat.h"
+#include "memory.h"
+#include "string.h"
 
 // file table in kernel
 struct file ftable[FTABLE_SZ];
 
 // allocate a free file structure in ftable
-static struct file*filealloc()
+struct file*filealloc()
 {
     for(int n = 0; n < FTABLE_SZ; n++)
     {
@@ -100,7 +102,7 @@ static inline struct file *filelookup(int _fd)
 }
 
 
-static int fdalloc(struct file *f)
+int fdalloc(struct file *f)
 {
     struct file **fs = current_proc->fd;
     for(int i = 0; i < FD_SIZE; i++)
@@ -125,11 +127,19 @@ int fddup(struct file *f)
     return fd;
 }
 
+int fddup_fd(int fd)
+{
+    struct file *f = filelookup(fd);
+    return fddup(f);
+}
+
 int read(int _fd, char *addr, int len)
 {
     struct file *f = filelookup(_fd);
-    if(f)
-        return fileread(f, addr, len);
+    if(f) {
+        int r = fileread(f, addr, len);
+        return r;
+    }
     return -1;
 }
 
@@ -206,8 +216,8 @@ int iunlink(char *path)
     }
 
     struct dirent di;
-    memset(di, 0, sizeof(struct dirent));
-    writei(dp, &di, offset, sizeof(struct dirent));
+    memset(&di, 0, sizeof(struct dirent));
+    writei(dp, (char *)&di, offset, sizeof(struct dirent));
     iunlock(dp);
     ilock(ip);
     ip->nlinks--;
@@ -225,7 +235,6 @@ struct inode *create(char *path, uint16_t mode)
     if(!dp)
         return NULL;
     ilock(dp);
-
     // open a exist file 
     if(ip = dirlookup(dp, name, 0))
     {
@@ -240,14 +249,13 @@ struct inode *create(char *path, uint16_t mode)
         iput(ip);
         return NULL;
     }
-
     // create a new file inode
     int ino;
     if(!(ino = ialloc(0)))
         return NULL;
-
     ip = iget(0, ino);
     ilock(ip);
+    memset(ip->zone, 0, 2*9);
     ip->nlinks = 1;
     ip->mode = mode;
     if(ISDIR(mode))
@@ -256,12 +264,12 @@ struct inode *create(char *path, uint16_t mode)
         dirlink(ip, ".", ip->inum);
         dirlink(ip, "..", dp->inum);
     }
-
+     
     dirlink(dp, name, ip->inum);    
     iunlock(ip);
     iunlock(dp);
     iput(dp);
-    return ip;    
+    return ip;
 }
 
 int open(char *path, int omode)
@@ -316,3 +324,4 @@ int mkdir(char *path)
     iput(ip);
     return 0;
 }
+

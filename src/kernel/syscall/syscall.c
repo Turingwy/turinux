@@ -4,6 +4,9 @@
 #include "proc.h"
 #include "stdio.h"
 #include "timer.h"
+#include "exec.h"
+#include "file.h"
+#include "dirent.h"
 
 int fetchint(struct proc *proc, uint32_t addr, int *ip)
 {
@@ -41,7 +44,6 @@ int argstr(int n, char **pp)
     return -1;
 }
 
-void sys_puts();
 int sys_fork();
 int sys_exit();
 int sys_wait();
@@ -57,6 +59,10 @@ int sys_close();
 int sys_link();
 int sys_unlink();
 int sys_mkdir();
+int sys_dup();
+int sys_getcwd();
+int sys_chdir();
+int sys_puts();
 
 syscall_t syscalls[SYSCALL_LEN] = {
         [0]  sys_fork,
@@ -69,12 +75,15 @@ syscall_t syscalls[SYSCALL_LEN] = {
         [7]  sys_open,
         [8]  sys_create,
         [9]  sys_close,
-        [10] sys_getpid,
+        [10] (syscall_t)sys_getpid,
         [12] sys_sleep,
         [13] sys_puts,
         [14] sys_link,
         [15] sys_unlink,
-        [16] sys_mkdir
+        [16] sys_mkdir,
+        [17] sys_dup,
+        [18] sys_getcwd,
+        [19] sys_chdir
 };
 
 void syscall(regs_pt *regs)
@@ -83,7 +92,6 @@ void syscall(regs_pt *regs)
     int syscall_no = regs->eax;
     if(syscall_no >= 0 && syscall_no < SYSCALL_LEN && syscalls[syscall_no]
 ) {
-           printk("pid:%d, eax:%d\n", current_proc->pid,regs->eax);
            regs->eax = syscalls[syscall_no]();
     }
     else
@@ -135,18 +143,12 @@ int sys_kill()
 
 pid_t sys_getpid()
 {
-    printk("pid:%d\n", current_proc->pid);
     return current_proc->pid;
 }
 
-void sys_puts()
+int sys_puts()
 {
-/*    char *str;
-    if(argstr(0, &str) < 0)
-        return -1;;
-    printk(str);
-    return 0;
-*/
+    void test();
     test();
 }
 
@@ -154,8 +156,7 @@ void sys_puts()
 int sys_exec()
 {
     char *path, **argv;
-    if(argstr(0, &path) < 0 || argptr(1, &argv, 4) < 0) {
-        printk("%s\n", path);
+    if(argstr(0, &path) < 0 || argptr(1, (char **)&argv, 4) < 0) {
         return -1;
     }
     return exec(path, argv);
@@ -215,7 +216,7 @@ int sys_create()
 
     if(argptr(0, &path, 1) < 0 || argint(1, &mode) < 0)
         return -1;
-    return create(path, mode);
+    return create(path, mode) ? 0 : -1;
 }
 
 int sys_open()
@@ -238,3 +239,39 @@ int sys_mkdir()
 
 }
 
+int sys_dup()
+{
+    int fd;
+    if(argint(0, &fd) < 0)
+        return -1;
+    return fddup_fd(fd);
+}
+
+int sys_getcwd()
+{
+    struct inode *ip = idup(current_proc->cwd);
+    struct file * f = filealloc();
+    f->in = ip;
+    f->offset = 0;
+    f->type = FD_INODE;
+    f->rw = FD_READABLE;
+    int fd = fdalloc(f);
+    if(fd > 0)
+        return fd;
+    return -1;
+}
+
+int sys_chdir()
+{
+    char *path;
+    if(argptr(0, &path, 1) < 0)
+        return -1;
+
+    struct inode *new_cwd = namei(path, 0);
+    if(!new_cwd)
+        return -1;
+
+    iput(current_proc->cwd);
+    current_proc->cwd = new_cwd;
+    return 0;
+}

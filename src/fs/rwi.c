@@ -1,10 +1,10 @@
 #include "fs.h"
 #include "dirent.h"
-#include "bmap.h"
 #include "bio.h"
 #include "buf.h"
 #include "dev.h"
 #include "stat.h"
+#include "memory.h"
 
 #define MIN(a, b)   ((a) > (b) ? (b) : (a))
 
@@ -29,6 +29,7 @@ int readi(struct inode *in, char *dest, uint32_t off, uint32_t len)
         return -1;
      if(off + len > in->size)
         len = in->size - off;
+
      int m, i;
      struct buf *bp;
      for(i = 0; i < len; i+=m, off+=m, dest+=m)

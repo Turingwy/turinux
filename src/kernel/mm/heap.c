@@ -7,6 +7,10 @@
 static heap_header_t *heap_first;
 static uint32_t heap_top = HEAP_START;
 
+static void split_chunk(heap_header_t *header, uint32_t len);
+static void alloc_chunk(uint32_t chunk, uint32_t len);
+static void glue_chunk(heap_header_t *chunk);
+
 void *kmalloc(uint32_t len)
 {
     len += sizeof(heap_header_t);
@@ -44,11 +48,11 @@ void *kmalloc(uint32_t len)
     return (void *)(chunk_start + sizeof(heap_header_t));
 }
 
-void split_chunk(heap_header_t *header, uint32_t len)
+static void split_chunk(heap_header_t *header, uint32_t len)
 {
     if(header->length - len <= sizeof(heap_header_t)) 
         return;
-    heap_header_t *chunk_next = (uint32_t)header + header->length;
+    heap_header_t *chunk_next = (heap_header_t *)((uint32_t)header + header->length);
     chunk_next->length = header->length - len;
     chunk_next->prev = header;
     chunk_next->next = header->next;
@@ -57,7 +61,7 @@ void split_chunk(heap_header_t *header, uint32_t len)
     header->length = len;    
 }
 
-void alloc_chunk(uint32_t chunk, uint32_t len)
+static void alloc_chunk(uint32_t chunk, uint32_t len)
 {
     while(chunk+len > heap_top)
     {
@@ -74,7 +78,7 @@ void kfree(void *p)
     glue_chunk(chunk);
 }
 
-void glue_chunk(heap_header_t *chunk)
+static void glue_chunk(heap_header_t *chunk)
 {
     if(chunk->next && chunk->allocated == 0) 
     {
@@ -109,7 +113,7 @@ void glue_chunk(heap_header_t *chunk)
             heap_top -= PAGE_SIZE;
             uint32_t p;
             getmapping(kern_pgd, heap_top, &p);
-            kpfree(P2V(p));
+            kpfree((uint8_t *)P2V(p));
             unmap(kern_pgd, heap_top);
         }
     }

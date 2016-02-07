@@ -1,7 +1,7 @@
 #include "types.h"
 #include "string.h"
 
-int strlen(char *str) 
+size_t strlen(char *str) 
 {
     int len = 0;
     while(*str++ != '\0')
@@ -9,7 +9,7 @@ int strlen(char *str)
     return len;
 }
 
-int strcpy(char *dest, char *src) 
+size_t strcpy(char *dest, char *src) 
 {
     int len = 0;
     while(*src != '\0') 

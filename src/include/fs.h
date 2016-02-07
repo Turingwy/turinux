@@ -69,8 +69,27 @@ extern struct inode icache[];
 #define ISECTOR(sp, in) (2 + ((sp)->imap_blk) + ((sp)->zmap_blk) \
                 + ((in)-1)/IPB)
 
-// function decriptions in src/fs
+
 
 uint32_t bmap(struct inode *in, uint16_t bn, int create);
+
+void readsb(uint32_t dev);
+
+int balloc(uint32_t dev);
+
+int ialloc(uint32_t dev);
+
+struct inode * iget(uint32_t dev, uint32_t inum);
+
+struct inode *idup(struct inode *in);
+
+void ilock(struct inode *in);
+
+void iunlock(struct inode *in);
+
+void iupdate(struct inode *in);
+
+void iput(struct inode *in);
+
 
 #endif

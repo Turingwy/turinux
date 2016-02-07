@@ -6,6 +6,9 @@
 #include "proc.h"
 #include "gdt.h"
 #include "file.h"
+#include "console.h"
+#include "memory.h"
+#include "string.h"
 
 #define MIN(a, b)       (a)>(b) ? (b):(a)
 
@@ -16,6 +19,9 @@ struct proc *running_procs;
 struct proc *waiting_procs;
 struct proc *init_proc;
 pid_t now_pid;
+
+// asm
+void switch_to(uint32_t old, uint32_t new);
 
 static struct proc *allocproc() 
 {
@@ -36,7 +42,7 @@ static struct proc *allocproc()
     sp = p->kstack + STACK_SIZE;
 
     sp -= sizeof(regs_pt);  // trapret use this regs to get back;
-    p->regs = (struct regs_pt *)sp;
+    p->regs = (regs_pt *)sp;
     sp -= sizeof(struct context);  // kernel context
     p->context = (struct context *)sp;
     memset(p->context, 0, sizeof(struct context));
@@ -50,28 +56,29 @@ void inituvm(pgd_t *pgd, uint32_t va, uint32_t start, uint32_t sz, uint32_t file
     uint32_t mem;
     uint32_t voff = va & 0x0FFF;
     int m;
-    for(int p = 0; sz > 0; sz -= m, voff=(voff+m)%PAGE_SIZE, p++, start+=m, filesz-=m)
+    for(int p = 0; sz > 0; sz -= m, voff=(voff+m)%PAGE_SIZE, p+=PAGE_SIZE, start+=m, filesz-=m)
     {
-        mem = kpalloc();
-        bzero(mem, PAGE_SIZE);
+        mem = (uint32_t)kpalloc();
+        bzero((uint8_t *)mem, PAGE_SIZE);
         map(pgd, PGROUNDUP(va)+p, V2P(mem), PAGE_WRITE | PAGE_PRESENT | PAGE_USER);
         m = MIN(sz, PAGE_SIZE- voff);
-        if(filesz>0)
-            memcpy(mem+voff, start, m);
+        if(filesz>0) {
+            memcpy((uint8_t *)(mem+voff), (uint8_t *)start, m);
+        }
     }
 } 
 
 static pgd_t *copyuvm(pgd_t *ppgd) 
 {
-    pgd_t *pgd = kpalloc();
+    pgd_t *pgd = (pgd_t *)kpalloc();
     if(!pgd)
         return NULL;
     for(int i = 0; i < PGDIRECT_INDEX(PAGE_OFFSET); i+=1)
     {
         if(ppgd[i] & PAGE_PRESENT != 0) 
         {
-            pte_t *pte = kpalloc();
-            if(!pte)    return;
+            pte_t *pte = (pte_t *)kpalloc();
+            if(!pte)    return NULL;
             pgd[i] = V2P(pte) | PAGE_PRESENT | PAGE_USER | PAGE_WRITE;
             pte_t *ppte = (pte_t *)P2V(ppgd[i] & PAGE_MASK);
             memcpy(pte, ppte,PAGE_SIZE);
@@ -95,7 +102,7 @@ static pgd_t *copyuvm(pgd_t *ppgd)
 
 pgd_t *setup_kpgd() 
 {
-    pgd_t *pgd = kpalloc();
+    pgd_t *pgd = (pgd_t *)kpalloc();
     bzero(pgd, PAGE_SIZE);
     for(int i = PGDIRECT_INDEX(PAGE_OFFSET); i < PGDIRECT_COUNT; i++) 
         pgd[i] = kern_pgd[i];
@@ -111,7 +118,7 @@ void userinit()
     p = allocproc();
     init_proc = p;
     p->pgd = setup_kpgd();
-    inituvm(p->pgd, 0, kernel_end, binary_size, binary_size);
+    inituvm(p->pgd, 0, (uint32_t)kernel_end, (uint32_t)binary_size, (uint32_t)binary_size);
     memset(p->regs, 0, sizeof(regs_pt));
     p->regs->cs = SEG_UCODE << 3 | 0x3;
     p->regs->ds = SEG_UDATA << 3| 0x3;
@@ -121,13 +128,25 @@ void userinit()
     p->regs->eflags = 0x200;
     strcpy(p->name, "init");
     p->state = TASK_RUNNING;
+    p->cwd = iget(0, 1);
     p->pid = now_pid++;
     p->parent = NULL;
     current_proc = p;
-
+    printk("init proc 1");
+    print_state(OK_STATE);
 }
 
-void scheduler(void)
+void switchuvm(struct proc *p) 
+{
+    cli();
+    set_gdt_entry(SEG_TSS, (uint32_t)&(cpuinfo.ts), sizeof(cpuinfo.ts)-1, 0x89, 0x4F);
+    cpuinfo.ts.ss0 = SEG_KDATA << 3;
+    cpuinfo.ts.esp0 = (uint32_t)p->kstack + STACK_SIZE;
+    ltr(SEG_TSS << 3);
+    switch_pgd(V2P(p->pgd));
+}
+
+void scheduler()
 {
     struct proc *p = current_proc->next;
     for(;;)
@@ -143,26 +162,16 @@ void scheduler(void)
         current_proc = p;
         running_procs = p;
         switchuvm(p);
-        switch_to(&(cpuinfo.scheduler), p->context);
+        switch_to((uint32_t)&(cpuinfo.scheduler), (uint32_t)(p->context));
         p = p->next;
         switch_pgd(V2P(kern_pgd));
     }
 }
 
-void switchuvm(struct proc *p) 
-{
-    cli();
-    set_gdt_entry(SEG_TSS, &(cpuinfo.ts), sizeof(cpuinfo.ts)-1, 0x89, 0x4F);
-    cpuinfo.ts.ss0 = SEG_KDATA << 3;
-    cpuinfo.ts.esp0 = (uint32_t)p->kstack + STACK_SIZE;
-    ltr(SEG_TSS << 3);
-    switch_pgd(V2P(p->pgd));
-}
-
 
 void sched()
 {
-    switch_to(&(current_proc->context), cpuinfo.scheduler);
+    switch_to((uint32_t)&(current_proc->context), (uint32_t)cpuinfo.scheduler);
 }
 
 int fork()
@@ -174,7 +183,7 @@ int fork()
     np->pgd = copyuvm(current_proc->pgd);
     if(np->pgd == NULL)
     {
-        kpfree(np);
+        kpfree((uint8_t *)np);
         return -1;
     }
     for(int i = 0; current_proc->fd[i]; i++)
@@ -182,6 +191,7 @@ int fork()
         current_proc->fd[i]->ref++;
         np->fd[i] = current_proc->fd[i];
     }
+    np->cwd = idup(current_proc->cwd);
     np->parent = current_proc;
     *np->regs = *current_proc->regs;
     np->regs->eax = 0;
@@ -266,8 +276,8 @@ int wait()
             {
                 pid_t pid = p->pid;
                 prev->next = p->next;
-                kpfree(p->pgd);
-                kpfree(p);
+                kpfree((uint8_t *)p->pgd);
+                kpfree((uint8_t *)p);
                 return pid;
             }
         }

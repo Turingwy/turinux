@@ -2,6 +2,7 @@
 #define _DEVS_H_
 
 #include "types.h"
+#include "fs.h"
 
 struct dev
 {
@@ -10,6 +11,10 @@ struct dev
 };
 
 extern struct dev devs[];
+
+void consoleinit();
+
+void kbdinit();
 
 #define DEVSCNT 64
 

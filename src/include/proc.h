@@ -65,12 +65,26 @@ static inline void ltr(uint16_t selector)
 
 extern struct proc *current_proc;
 
+void inituvm(pgd_t *pgd, uint32_t va, uint32_t start, uint32_t sz, uint32_t filesz);
+
+pgd_t *setup_kpgd();
+
 void sched();
+
+void scheduler();
+
 void userinit();
+
 int fork();
+
 int wait();
+
 void sleep(void *chan, int cli);
+
 void wakeup(void *chan);
+
 void exit();
+
 int kill(pid_t pid);
+
 #endif

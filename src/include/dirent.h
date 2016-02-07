@@ -20,9 +20,13 @@ struct dirent
 
 struct inode *dirlookup(struct inode *dp, char *dirname, uint32_t *offp);
 
+
 struct inode *namei(char *path, char *name);
 
 struct inode *namepi(char *path, char *name);
+
+int dirlink(struct inode *dp, char *dirname, uint32_t ino);
+
 
 #endif
 
